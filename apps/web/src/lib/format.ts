@@ -53,3 +53,13 @@ export function pctChange(current: string, previous: string): number | null {
   if (p.isZero()) return null;
   return Number(money(current).minus(p).div(p.abs()).times(100).toFixed(1));
 }
+
+/** "52,9 %" in French locales, "52.9%" in English — never a hard-coded dot. */
+export function fmtPct(value: string | number, locale: string, opts: { signed?: boolean } = {}) {
+  return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1, signDisplay: opts.signed ? 'exceptZero' : 'auto' }).format(Number(value) / 100);
+}
+
+export function usePct() {
+  const locale = useLocale();
+  return (value: string | number, opts?: { signed?: boolean }) => fmtPct(value, locale, opts);
+}

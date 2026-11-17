@@ -15,6 +15,8 @@ import { accountsRouter } from './modules/accounts/accounts.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { budgetsRouter } from './modules/budgets/budgets.routes';
 import { categoriesRouter } from './modules/categories/categories.routes';
+import { debtsRouter } from './modules/debts/debts.routes';
+import { goalsRouter } from './modules/goals/goals.routes';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes';
 import { ratesRouter } from './modules/exchange-rates/rates.routes';
 import { notificationsRouter } from './modules/notifications/notifications.routes';
@@ -55,6 +57,8 @@ export function createApp() {
   secured.use('/transactions', transactionsRouter);
   secured.use('/categories', categoriesRouter);
   secured.use('/budgets', budgetsRouter);
+  secured.use('/goals', goalsRouter);
+  secured.use('/debts', debtsRouter);
   secured.use('/exchange-rates', ratesRouter);
   secured.use('/notifications', notificationsRouter);
   api.use(secured);

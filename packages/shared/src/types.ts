@@ -151,3 +151,55 @@ export interface NotificationDTO {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }
+
+export interface GoalContributionDTO {
+  id: string;
+  /** Negative for withdrawals. */
+  amount: string;
+  date: ISODate;
+  note: string | null;
+}
+
+export interface SavingsGoalDTO {
+  id: string;
+  name: string;
+  targetAmount: string;
+  currency: Currency;
+  deadline: ISODate | null;
+  icon: string;
+  color: string;
+  archived: boolean;
+  saved: string;
+  remaining: string;
+  percent: string;
+  completed: boolean;
+  /** Amount to set aside each month to reach the target by the deadline, or null. */
+  monthlyNeeded: string | null;
+  contributions?: GoalContributionDTO[];
+}
+
+export interface DebtPaymentDTO {
+  id: string;
+  amount: string;
+  date: ISODate;
+  note: string | null;
+  account: { id: string; name: string } | null;
+}
+
+export interface DebtDTO {
+  id: string;
+  direction: 'BORROWED' | 'LENT';
+  counterparty: string;
+  principal: string;
+  currency: Currency;
+  startDate: ISODate;
+  dueDate: ISODate | null;
+  note: string | null;
+  paid: string;
+  remaining: string;
+  percent: string;
+  settled: boolean;
+  overdue: boolean;
+  account: { id: string; name: string } | null;
+  payments?: DebtPaymentDTO[];
+}

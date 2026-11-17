@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { Card, EmptyState, Money, Progress, SectionHeader } from '@/components/ui/primitives';
 import { TransactionRow } from '@/features/transactions/transaction-row';
-import { fmtDate, useLocale } from '@/lib/format';
+import { fmtDate, useLocale, usePct } from '@/lib/format';
 import { useComposer } from '@/stores/composer';
 
 function SeeAll({ to, label }: { to: string; label: string }) {
@@ -18,6 +18,7 @@ function SeeAll({ to, label }: { to: string; label: string }) {
 
 /** Ranked meter list in one hue: identity comes from the label, magnitude from length. */
 export function SpendingBreakdown({ data }: { data: DashboardDTO }) {
+  const fmtP = usePct();
   const items = data.spendingByCategory.slice(0, 6);
   const rest = data.spendingByCategory.slice(6);
   const restTotal = rest.reduce((s, i) => s + Number(i.amount), 0);
@@ -27,7 +28,7 @@ export function SpendingBreakdown({ data }: { data: DashboardDTO }) {
 
   return (
     <Card className="flex flex-col">
-      <SectionHeader title="Where it went" subtitle={top ? `${top.name} leads at ${top.percent}% of spending` : 'Spending by category'} />
+      <SectionHeader title="Where it went" subtitle={top ? `${top.name} leads at ${fmtP(top.percent)} of spending` : 'Spending by category'} />
       {items.length === 0 ? (
         <EmptyState icon={<Receipt />} title="No spending yet" message="Expenses you add in this period will be grouped by category here." />
       ) : (
@@ -38,7 +39,7 @@ export function SpendingBreakdown({ data }: { data: DashboardDTO }) {
                 <CategoryIcon icon={i.icon} color={i.color} size="sm" />
                 <span className="flex-1 truncate text-callout">{i.name}</span>
                 <Money value={i.amount} currency={data.baseCurrency} className="text-callout font-medium" />
-                <span className="tabular w-12 text-right text-footnote text-label-3">{i.percent}%</span>
+                <span className="tabular w-12 text-right text-footnote text-label-3">{fmtP(i.percent)}</span>
               </div>
               <div className="ml-[38px] h-1.5 overflow-hidden rounded-full bg-fill" aria-hidden>
                 <div className="h-full rounded-full bg-[var(--series-income)]" style={{ width: `${(Number(i.amount) / max) * 100}%` }} />
@@ -51,7 +52,7 @@ export function SpendingBreakdown({ data }: { data: DashboardDTO }) {
                 {rest.length} more {rest.length > 1 ? 'categories' : 'category'}
               </span>
               <Money value={restTotal.toFixed(2)} currency={data.baseCurrency} />
-              <span className="tabular w-12 text-right text-footnote text-label-3">{restPct.toFixed(1)}%</span>
+              <span className="tabular w-12 text-right text-footnote text-label-3">{fmtP(restPct.toFixed(1))}</span>
             </li>
           )}
         </ul>
@@ -90,6 +91,7 @@ export function RecentTransactions({ data }: { data: DashboardDTO }) {
 }
 
 export function BudgetMeter({ b }: { b: BudgetDTO }) {
+  const fmtP = usePct();
   const locale = useLocale();
   const pct = Number(b.current.percent);
   const remaining = Number(b.current.remaining);
@@ -98,9 +100,9 @@ export function BudgetMeter({ b }: { b: BudgetDTO }) {
       {/* Name gets the full row; figures move below the meter so nothing truncates. */}
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <span className="min-w-0 truncate text-callout font-medium">{b.name}</span>
-        <span className="tabular shrink-0 text-footnote text-label-2">{b.current.percent}%</span>
+        <span className="tabular shrink-0 text-footnote text-label-2">{fmtP(b.current.percent)}</span>
       </div>
-      <Progress percent={pct} state={b.current.state} label={`${b.name}: ${b.current.percent}% used`} />
+      <Progress percent={pct} state={b.current.state} label={`${b.name}: ${fmtP(b.current.percent)} used`} />
       <p className="mt-1.5 flex flex-wrap justify-between gap-x-3 text-footnote text-label-3">
         <span>
           <Money value={b.current.spent} currency={b.currency} className="text-label-2" /> of <Money value={b.amount} currency={b.currency} />
@@ -148,10 +150,14 @@ export function BudgetsCard({ data }: { data: DashboardDTO }) {
 }
 
 export function GoalsCard({ data }: { data: DashboardDTO }) {
-  if (data.savingsGoals.length === 0) return null; // Savings module ships in Phase 4; hide until there is data.
+  const fmtP = usePct();
+  if (data.savingsGoals.length === 0) return null;
   return (
     <Card className="flex flex-col">
-      <SectionHeader title="Savings goals" />
+      <SectionHeader
+        title="Savings goals"
+        action={<SeeAll to="/goals" label="See all savings goals" />}
+      />
       <ul className="flex flex-col gap-5 px-5 pb-5 pt-2">
         {data.savingsGoals.map((g) => (
           <li key={g.id} className="flex items-center gap-3">
@@ -161,9 +167,9 @@ export function GoalsCard({ data }: { data: DashboardDTO }) {
             <div className="min-w-0 flex-1">
               <div className="mb-1.5 flex items-baseline justify-between gap-3">
                 <span className="truncate text-callout font-medium">{g.name}</span>
-                <span className="tabular text-footnote text-label-2">{g.percent}%</span>
+                <span className="tabular text-footnote text-label-2">{fmtP(g.percent)}</span>
               </div>
-              <Progress percent={Number(g.percent)} label={`${g.name}: ${g.percent}% saved`} />
+              <Progress percent={Number(g.percent)} label={`${g.name}: ${fmtP(g.percent)} saved`} />
               <p className="mt-1 text-footnote text-label-3">
                 <Money value={g.current} currency={g.currency} /> of <Money value={g.target} currency={g.currency} />
               </p>

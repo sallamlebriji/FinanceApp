@@ -5,6 +5,7 @@ import {
   budgetStatus,
   createConverter,
   debtRemaining,
+  monthlyNeeded,
   isReportable,
   netWorth,
   newlyCrossedThresholds,
@@ -184,5 +185,17 @@ describe('balanceFromAggregates', () => {
     expect(
       balanceFromAggregates({ openingBalance: '500', income: '10000', expense: '2500.50', transferOut: '1000', transferIn: null }).toFixed(2),
     ).toBe('6999.50');
+  });
+});
+
+describe('monthlyNeeded', () => {
+  it('spreads the remainder over the months left, including this one, rounding up', () => {
+    expect(monthlyNeeded('1000', '2026-11-17', '2027-01-31')?.toFixed(2)).toBe('333.34');
+    expect(monthlyNeeded('500', '2026-11-17', '2026-11-30')?.toFixed(2)).toBe('500.00');
+  });
+  it('returns null when complete, without deadline, or past the deadline', () => {
+    expect(monthlyNeeded('0', '2026-11-17', '2027-01-01')).toBeNull();
+    expect(monthlyNeeded('100', '2026-11-17', null)).toBeNull();
+    expect(monthlyNeeded('100', '2026-11-17', '2026-10-01')).toBeNull();
   });
 });

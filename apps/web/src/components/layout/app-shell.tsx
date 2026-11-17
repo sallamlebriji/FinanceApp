@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { TransactionComposer } from '@/features/transactions/transaction-composer';
 import { cn } from '@/lib/format';
 import { useComposer } from '@/stores/composer';
-import { NAV } from './nav';
+import { NAV, PLAN_PAGES } from './nav';
 import { Topbar } from './topbar';
 
 function Wordmark() {
@@ -18,6 +18,8 @@ function Wordmark() {
 export function AppShell() {
   const show = useComposer((s) => s.show);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const inPlan = PLAN_PAGES.some((p) => pathname.startsWith(p.to));
 
   // Keyboard: N = new transaction, / = search (ignored while typing).
   useEffect(() => {
@@ -81,21 +83,27 @@ export function AppShell() {
         className="fixed inset-x-0 bottom-0 z-30 border-t hairline bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5">
-          {NAV.map((item) => (
+          {NAV.filter((n) => n.tab).map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
                 end={item.to === '/'}
                 className={({ isActive }) =>
-                  cn('flex h-[52px] flex-col items-center justify-center gap-0.5 text-caption font-medium', isActive ? 'text-accent' : 'text-label-2')
+                  cn(
+                    'flex h-[52px] flex-col items-center justify-center gap-0.5 text-caption font-medium',
+                    isActive || (item.to === '/budgets' && inPlan) ? 'text-accent' : 'text-label-2',
+                  )
                 }
               >
-                {({ isActive }) => (
+                {({ isActive: active }) => {
+                  const isActive = active || (item.to === '/budgets' && inPlan);
+                  return (
                   <>
                     <item.icon className="size-[22px]" strokeWidth={isActive ? 2.3 : 1.8} aria-hidden />
                     {item.short}
                   </>
-                )}
+                  );
+                }}
               </NavLink>
             </li>
           ))}

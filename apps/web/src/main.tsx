@@ -9,6 +9,8 @@ import { AccountsPage } from '@/features/accounts/accounts-page';
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from '@/features/auth/auth-pages';
 import { BudgetsPage } from '@/features/budgets/budgets-page';
 import { DashboardPage } from '@/features/dashboard/dashboard-page';
+import { DebtsPage } from '@/features/debts/debts-page';
+import { GoalsPage } from '@/features/goals/goals-page';
 import { SettingsPage } from '@/features/settings/settings-page';
 import { TransactionsPage } from '@/features/transactions/transactions-page';
 import { refreshSession } from '@/lib/api';
@@ -61,6 +63,8 @@ function App() {
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/accounts/:id" element={<AccountDetailPage />} />
           <Route path="/budgets" element={<BudgetsPage />} />
+          <Route path="/goals" element={<GoalsPage />} />
+          <Route path="/debts" element={<DebtsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Route>

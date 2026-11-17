@@ -32,7 +32,7 @@ export function TransactionRow({
   trailing?: ReactNode;
 }) {
   const isTransfer = t.type === 'TRANSFER';
-  const subtitle = isTransfer ? `${t.account.name} → ${t.toAccount?.name ?? ''}` : [t.category?.name ?? 'Uncategorised', t.account.name].join(' · ');
+  const subtitle = isTransfer ? `${t.account.name} → ${t.toAccount?.name ?? ''}` : [t.category?.name ?? (t.debtId ? 'Debt' : 'Uncategorised'), t.account.name].join(' · ');
   const value = signedAmount(t, perspectiveAccountId);
   const currency = isTransfer && perspectiveAccountId === t.toAccountId && t.toCurrency ? t.toCurrency : t.currency;
   const hasActions = onEdit || onDuplicate || onDelete;

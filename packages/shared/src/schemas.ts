@@ -192,3 +192,56 @@ export const periodQuerySchema = z
     message: 'Provide a valid from/to range',
   });
 export type PeriodQuery = z.infer<typeof periodQuerySchema>;
+
+/* ---------- savings goals ---------- */
+
+export const goalCreateSchema = z.object({
+  name: z.string().trim().min(1, 'Enter a name').max(60),
+  targetAmount: positiveAmountSchema,
+  currency: currencySchema.default('MAD'),
+  deadline: isoDateSchema.optional().nullable(),
+  icon: z.enum(CATEGORY_ICONS).default('piggy'),
+  color: colorSchema.default('#4B3FD1'),
+});
+export type GoalCreateInput = z.input<typeof goalCreateSchema>;
+export const goalUpdateSchema = goalCreateSchema.partial().extend({ archived: z.boolean().optional() });
+export type GoalUpdateInput = z.input<typeof goalUpdateSchema>;
+
+/** A contribution adds to a goal; `withdraw` takes money back out. Both are positive amounts. */
+export const contributionCreateSchema = z.object({
+  amount: positiveAmountSchema,
+  kind: z.enum(['DEPOSIT', 'WITHDRAWAL']).default('DEPOSIT'),
+  date: isoDateSchema,
+  note: z.string().trim().max(255).optional().nullable(),
+});
+export type ContributionCreateInput = z.input<typeof contributionCreateSchema>;
+
+/* ---------- debts ---------- */
+
+export const debtCreateSchema = z.object({
+  direction: z.enum(['BORROWED', 'LENT']),
+  counterparty: z.string().trim().min(1, 'Enter who the debt is with').max(80),
+  principal: positiveAmountSchema,
+  currency: currencySchema.default('MAD'),
+  startDate: isoDateSchema,
+  dueDate: isoDateSchema.optional().nullable(),
+  note: z.string().trim().max(2000).optional().nullable(),
+  /** When set, the money received (borrowed) or handed over (lent) moves through this account. */
+  accountId: idSchema.optional().nullable(),
+});
+export type DebtCreateInput = z.input<typeof debtCreateSchema>;
+export const debtUpdateSchema = z.object({
+  counterparty: z.string().trim().min(1).max(80).optional(),
+  dueDate: isoDateSchema.optional().nullable(),
+  note: z.string().trim().max(2000).optional().nullable(),
+});
+export type DebtUpdateInput = z.input<typeof debtUpdateSchema>;
+
+export const debtPaymentCreateSchema = z.object({
+  amount: positiveAmountSchema,
+  date: isoDateSchema,
+  note: z.string().trim().max(255).optional().nullable(),
+  /** When set, the repayment moves through this account (out if you borrowed, in if you lent). */
+  accountId: idSchema.optional().nullable(),
+});
+export type DebtPaymentCreateInput = z.input<typeof debtPaymentCreateSchema>;

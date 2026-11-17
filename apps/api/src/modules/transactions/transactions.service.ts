@@ -10,7 +10,7 @@ import {
   type TransactionQuery,
   type TransactionUpdateInput,
 } from '@mizan/shared';
-import { badRequest, notFound } from '../../lib/errors';
+import { badRequest, conflict, notFound } from '../../lib/errors';
 import { prisma, type Prisma, type Tx } from '../../lib/prisma';
 import { amount, dateValue, isoDate } from '../../lib/serialize';
 import { evaluateBudgetAlerts } from '../budgets/budgets.service';
@@ -167,6 +167,11 @@ async function getOwned(userId: string, id: string) {
   return t;
 }
 
+/** Loan and repayment rows are owned by their debt; changing them here would desync it. */
+function assertNotDebtRow(t: { debtId: string | null }) {
+  if (t.debtId) throw conflict('This entry belongs to a debt — change it from Debts');
+}
+
 export async function getTransaction(userId: string, id: string) {
   return toTransactionDTO(await getOwned(userId, id));
 }
@@ -175,6 +180,7 @@ export async function getTransaction(userId: string, id: string) {
 export async function updateTransaction(userId: string, id: string, raw: TransactionUpdateInput): Promise<TransactionDTO> {
   const input = transactionUpdateSchema.parse(raw);
   const current = await getOwned(userId, id);
+  assertNotDebtRow(current);
   const row = await prisma.$transaction(async (db) => {
     const merged = {
       type: current.type,
@@ -210,6 +216,7 @@ export async function updateTransaction(userId: string, id: string, raw: Transac
 }
 
 export async function deleteTransaction(userId: string, id: string) {
+  assertNotDebtRow(await getOwned(userId, id));
   const r = await prisma.transaction.deleteMany({ where: { id, userId } });
   if (r.count === 0) throw notFound('Transaction');
 }
@@ -217,6 +224,7 @@ export async function deleteTransaction(userId: string, id: string) {
 /** Duplicates a transaction onto today's date (in the user's time zone). */
 export async function duplicateTransaction(userId: string, id: string): Promise<TransactionDTO> {
   const t = await getOwned(userId, id);
+  assertNotDebtRow(t);
   const settings = await prisma.userSettings.findUnique({ where: { userId } });
   const base = {
     amount: amount(t.amount),

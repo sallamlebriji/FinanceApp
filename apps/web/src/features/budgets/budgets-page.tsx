@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
 import { z } from 'zod';
+import { PlanSwitcher } from '@/components/layout/plan-switcher';
 import { Button } from '@/components/ui/button';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { Confirm } from '@/components/ui/confirm';
@@ -16,6 +17,7 @@ import { toast } from '@/components/ui/toast';
 import { BudgetMeter } from '@/features/dashboard/lists';
 import { useCategories } from '@/features/transactions/api';
 import { errorMessage } from '@/lib/api';
+import { usePct } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
 import { useBudgets, useDeleteBudget, useSaveBudget } from './api';
 
@@ -120,6 +122,7 @@ function BudgetSheet({ open, onOpenChange, budget }: { open: boolean; onOpenChan
 }
 
 export function BudgetsPage() {
+  const fmtP = usePct();
   const [params, setParams] = useSearchParams();
   const { data = [], isLoading, error, refetch } = useBudgets();
   const del = useDeleteBudget();
@@ -142,6 +145,7 @@ export function BudgetsPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      <PlanSwitcher />
       <header className="flex flex-wrap items-end justify-between gap-3 pt-2">
         <div>
           <h1 className="text-title1 font-semibold tracking-[-0.01em]">Budgets</h1>
@@ -201,7 +205,7 @@ export function BudgetsPage() {
                       {b.current.state !== 'ok' && (
                         <div className="mt-2">
                           <Badge tone={b.current.state === 'warning' ? 'warning' : 'negative'}>
-                            {b.current.state === 'over' ? 'Over limit' : `${b.current.percent}% used`}
+                            {b.current.state === 'over' ? 'Over limit' : `${fmtP(b.current.percent)} used`}
                           </Badge>
                         </div>
                       )}

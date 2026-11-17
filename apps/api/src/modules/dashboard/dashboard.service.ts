@@ -20,9 +20,10 @@ import {
   type ReportableTx,
 } from '@mizan/shared';
 import { prisma } from '../../lib/prisma';
-import { dateValue } from '../../lib/serialize';
+import { dateValue, isoDate } from '../../lib/serialize';
 import { accountAggregates } from '../accounts/accounts.service';
 import { listBudgets } from '../budgets/budgets.service';
+import { outstandingDebts } from '../debts/debts.service';
 import { converterFor } from '../exchange-rates/rates.service';
 import { toTransactionDTO, transactionInclude } from '../transactions/transactions.service';
 
@@ -104,6 +105,28 @@ async function spendingByCategory(userId: string, range: DateRange, base: Curren
     }));
 }
 
+type DebtHistory = {
+  direction: 'BORROWED' | 'LENT';
+  currency: Currency;
+  principal: string;
+  start: string;
+  payments: { date: string; amount: string }[];
+};
+
+async function debtHistory(userId: string): Promise<DebtHistory[]> {
+  const rows = await prisma.debt.findMany({
+    where: { userId },
+    select: { direction: true, currency: true, principal: true, startDate: true, payments: { select: { date: true, amount: true } } },
+  });
+  return rows.map((d) => ({
+    direction: d.direction,
+    currency: d.currency,
+    principal: d.principal.toString(),
+    start: isoDate(d.startDate),
+    payments: d.payments.map((p) => ({ date: isoDate(p.date), amount: p.amount.toString() })),
+  }));
+}
+
 /** Month-end net worth computed forward from opening balances (current rates). */
 async function netWorthSeries(
   userId: string,
@@ -111,6 +134,7 @@ async function netWorthSeries(
   accounts: { id: string; currency: Currency; openingBalance: string; includeInNetWorth: boolean }[],
   base: Currency,
   converter: Converter,
+  debts: DebtHistory[],
 ) {
   const rows = await prisma.$queryRaw<{ acc: string; m: string; d: Raw }[]>`
     SELECT accountId AS acc, DATE_FORMAT(\`date\`, '%Y-%m') AS m,
@@ -129,6 +153,14 @@ async function netWorthSeries(
         .reduce((s, r) => s.plus(String(r.d ?? 0)), money(0));
       return { currency: a.currency, amount: money(a.openingBalance).plus(delta) };
     });
+    // Debts outstanding at month end: owed money counts against net worth, lent money for it.
+    for (const d of debts) {
+      if (d.start.slice(0, 7) > month) continue;
+      const paid = d.payments.filter((p) => p.date.slice(0, 7) <= month).reduce((s, p) => s.plus(p.amount), money(0));
+      const left = money(d.principal).minus(paid);
+      if (left.lte(0)) continue;
+      items.push({ currency: d.currency, amount: d.direction === 'BORROWED' ? left.negated() : left });
+    }
     return { month, amount: convertTotals(totalsByCurrency(items), base, converter).total.toFixed(2) };
   });
 }
@@ -151,7 +183,8 @@ export async function getDashboard(userId: string, query: unknown): Promise<Dash
     openingBalance: a.openingBalance.toString(),
     includeInNetWorth: a.includeInNetWorth,
   }));
-  const nw = netWorth(accountLikes, balances, base, converter);
+  const debts = await debtHistory(userId);
+  const nw = netWorth(accountLikes, balances, base, converter, await outstandingDebts(userId));
   const byCurrency = totalsByCurrency(accounts.map((a) => ({ currency: a.currency, amount: balances.get(a.id)! })));
 
   // Cash-flow window: the selected months, or the 6 months ending with the period.
@@ -165,7 +198,7 @@ export async function getDashboard(userId: string, query: unknown): Promise<Dash
     reportableTotals(userId, prev),
     monthlyCashFlow(userId, { from: `${windowMonths[0]}-01`, to: window.to }, base, converter),
     spendingByCategory(userId, range, base, converter),
-    netWorthSeries(userId, windowMonths, accountLikes, base, converter),
+    netWorthSeries(userId, windowMonths, accountLikes, base, converter, debts),
     prisma.transaction.findMany({ where: { userId }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: 6, include: transactionInclude }),
     listBudgets(userId),
     prisma.savingsGoal.findMany({

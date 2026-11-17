@@ -9,5 +9,5 @@ coverage/
 .expo/
 uploads/
 .DS_Store
-src/generated/
+**/src/generated/
 .local/

@@ -229,3 +229,16 @@ export function balanceFromAggregates(a: {
     .minus(money(a.transferOut))
     .plus(money(a.transferIn));
 }
+
+/**
+ * Amount to set aside per calendar month (current month included) to reach `remaining` by
+ * `deadline`. Null when nothing is left to save or the deadline has passed.
+ */
+export function monthlyNeeded(remaining: MoneyInput, today: string, deadline: string | null | undefined): Decimal | null {
+  const r = money(remaining);
+  if (!deadline || r.lte(0) || deadline < today) return null;
+  const [ty, tm] = today.split('-').map(Number) as [number, number];
+  const [dy, dm] = deadline.split('-').map(Number) as [number, number];
+  const months = dy * 12 + dm - (ty * 12 + tm) + 1;
+  return r.div(months).toDecimalPlaces(2, 0 /* ROUND_UP: never fall short */);
+}

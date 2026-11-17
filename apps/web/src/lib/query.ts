@@ -14,6 +14,6 @@ export const queryClient = new QueryClient({
 /** Every financial mutation can change balances, budgets and dashboard figures. */
 export function invalidateFinance() {
   return Promise.all(
-    ['transactions', 'accounts', 'dashboard', 'budgets', 'notifications'].map((k) => queryClient.invalidateQueries({ queryKey: [k] })),
+    ['transactions', 'accounts', 'dashboard', 'budgets', 'notifications', 'goals', 'debts'].map((k) => queryClient.invalidateQueries({ queryKey: [k] })),
   );
 }

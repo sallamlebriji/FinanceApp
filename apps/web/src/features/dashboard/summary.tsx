@@ -2,11 +2,12 @@ import type { DashboardDTO } from '@mizan/shared';
 import { money } from '@mizan/shared';
 import { ArrowDownRight, ArrowUpRight, Info } from 'lucide-react';
 import { Card, Money } from '@/components/ui/primitives';
-import { cn, fmtDate, pctChange, splitMoney, useLocale } from '@/lib/format';
+import { cn, fmtDate, pctChange, splitMoney, useLocale, usePct } from '@/lib/format';
 import { BalanceBeam } from './balance-beam';
 
 /** Change vs previous period. Direction is spelled out (arrow + sign + words), not colour alone. */
 function Delta({ current, previous, goodWhenUp }: { current: string; previous: string; goodWhenUp: boolean }) {
+  const fmtP = usePct();
   const pct = pctChange(current, previous);
   if (pct === null) return <span className="text-footnote text-label-3">No data for the previous period</span>;
   const up = pct > 0;
@@ -15,7 +16,7 @@ function Delta({ current, previous, goodWhenUp }: { current: string; previous: s
   return (
     <span className={cn('inline-flex items-center gap-0.5 text-footnote font-medium', good === null ? 'text-label-3' : good ? 'text-positive' : 'text-negative')}>
       {pct !== 0 && <Icon className="size-3.5" aria-hidden />}
-      <span className="tabular">{`${up ? '+' : ''}${pct.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`}</span>
+      <span className="tabular">{fmtP(pct, { signed: true })}</span>
       <span className="sr-only">compared with the previous period</span>
     </span>
   );
@@ -32,6 +33,7 @@ function Figure({ label, children, footer }: { label: string; children: React.Re
 }
 
 export function SummaryHero({ data }: { data: DashboardDTO }) {
+  const fmtP = usePct();
   const locale = useLocale();
   const base = data.baseCurrency;
   const { number } = splitMoney(data.netWorth.amount, base, locale);
@@ -84,11 +86,11 @@ export function SummaryHero({ data }: { data: DashboardDTO }) {
           label="Savings rate"
           footer={
             <span className="text-footnote text-label-3">
-              {data.previous.savingsRate !== null ? `${data.previous.savingsRate}% previous period` : 'Share of income kept'}
+              {data.previous.savingsRate !== null ? `${fmtP(data.previous.savingsRate)} previous period` : 'Share of income kept'}
             </span>
           }
         >
-          <span className="tabular">{c.savingsRate !== null ? `${c.savingsRate}%` : '—'}</span>
+          <span className="tabular">{c.savingsRate !== null ? fmtP(c.savingsRate) : '—'}</span>
         </Figure>
       </dl>
       <p className="text-footnote text-label-3">

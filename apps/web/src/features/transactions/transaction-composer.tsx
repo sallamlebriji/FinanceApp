@@ -144,6 +144,34 @@ export function TransactionComposer() {
   const title = editing ? 'Edit transaction' : 'New transaction';
   const submitLabel = editing ? 'Save changes' : f.type === 'INCOME' ? 'Add income' : f.type === 'TRANSFER' ? 'Record transfer' : 'Add expense';
 
+  // Loan and repayment rows are owned by their debt and can only change from there.
+  if (open && editing?.debtId) {
+    return (
+      <Sheet
+        open
+        onOpenChange={(o) => !o && close()}
+        title={editing.description}
+        description="This entry is part of a debt, so it's kept out of your income and spending."
+        footer={
+          <>
+            <Button onClick={close}>Close</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                close();
+                navigate('/debts');
+              }}
+            >
+              Open Debts
+            </Button>
+          </>
+        }
+      >
+        <p className="text-callout text-label-2">To change or remove it, open the debt and edit its repayments — balances update together.</p>
+      </Sheet>
+    );
+  }
+
   return (
     <Sheet
       open={open}
