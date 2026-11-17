@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Mizan",
+    "slug": "mizan",
+    "scheme": "mizan",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ma.mizan.app",
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "ma.mizan.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#4B3FD1",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true }
+  }
+}
