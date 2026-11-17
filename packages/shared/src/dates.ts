@@ -131,3 +131,42 @@ export function monthKeys(range: DateRange): string[] {
   }
   return keys;
 }
+
+export const FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const;
+export type Frequency = (typeof FREQUENCIES)[number];
+
+/** The occurrence after `date`. Month-based schedules keep `anchorDay` (31st → 28/29/30/31). */
+export function nextOccurrence(date: ISODate, frequency: Frequency, interval = 1, anchorDay?: number | null): ISODate {
+  const n = Math.max(1, Math.trunc(interval));
+  switch (frequency) {
+    case 'DAILY':
+      return addDays(date, n);
+    case 'WEEKLY':
+      return addDays(date, 7 * n);
+    case 'MONTHLY':
+      return addMonths(date, n, anchorDay ?? undefined);
+    case 'QUARTERLY':
+      return addMonths(date, 3 * n, anchorDay ?? undefined);
+    case 'YEARLY':
+      return addMonths(date, 12 * n, anchorDay ?? undefined);
+  }
+}
+
+/**
+ * Occurrences from `nextDate` up to and including `until` (and `endDate`, if any), plus the
+ * next date still to come. `limit` caps catch-up after a long pause.
+ */
+export function dueOccurrences(
+  rule: { nextDate: ISODate; frequency: Frequency; interval?: number; anchorDay?: number | null; endDate?: ISODate | null },
+  until: ISODate,
+  limit = 400,
+): { dates: ISODate[]; next: ISODate; finished: boolean } {
+  const dates: ISODate[] = [];
+  let d = rule.nextDate;
+  const stop = rule.endDate && rule.endDate < until ? rule.endDate : until;
+  while (d <= stop && dates.length < limit) {
+    dates.push(d);
+    d = nextOccurrence(d, rule.frequency, rule.interval, rule.anchorDay);
+  }
+  return { dates, next: d, finished: !!rule.endDate && d > rule.endDate };
+}

@@ -64,7 +64,7 @@ interface Resolved {
  * accounts in different currencies requires the credited amount; the implied rate is
  * stored on the row and recorded in the exchange-rate history.
  */
-async function resolve(
+export async function resolveTransaction(
   db: Tx,
   userId: string,
   v: {
@@ -138,7 +138,7 @@ async function recordTransferRate(db: Tx, userId: string, r: Resolved, date: str
 export async function createTransaction(userId: string, raw: TransactionCreateInput): Promise<TransactionDTO> {
   const input = transactionCreateSchema.parse(raw);
   const row = await prisma.$transaction(async (db) => {
-    const r = await resolve(db, userId, {
+    const r = await resolveTransaction(db, userId, {
       ...input,
       toAccountId: input.type === 'TRANSFER' ? input.toAccountId : null,
       toAmount: input.type === 'TRANSFER' ? input.toAmount : null,
@@ -196,7 +196,7 @@ export async function updateTransaction(userId: string, id: string, raw: Transac
             : amount(current.toAmount),
       categoryId: input.categoryId !== undefined ? input.categoryId : current.categoryId,
     };
-    const r = await resolve(db, userId, merged);
+    const r = await resolveTransaction(db, userId, merged);
     const date = input.date ?? isoDate(current.date);
     await recordTransferRate(db, userId, r, date);
     return db.transaction.update({

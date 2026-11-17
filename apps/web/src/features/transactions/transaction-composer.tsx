@@ -1,4 +1,11 @@
-import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS, positiveAmountSchema, todayInTimeZone, type TransactionCreateInput } from '@mizan/shared';
+import {
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHODS,
+  positiveAmountSchema,
+  todayInTimeZone,
+  type RecurringCreateInput,
+  type TransactionCreateInput,
+} from '@mizan/shared';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
@@ -10,9 +17,10 @@ import { Sheet } from '@/components/ui/sheet';
 import { toast } from '@/components/ui/toast';
 import { useAccounts } from '@/features/accounts/api';
 import { ApiError } from '@/lib/api';
-import { cn } from '@/lib/format';
+import { cn, fmtDate, useLocale } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
 import { useComposer } from '@/stores/composer';
+import { useCreateRecurring } from '@/features/recurring/api';
 import { useCategories, useSaveTransaction } from './api';
 
 type Kind = 'EXPENSE' | 'INCOME' | 'TRANSFER';
@@ -28,7 +36,17 @@ interface FormState {
   date: string;
   paymentMethod: string;
   note: string;
+  /** '' = one-off; otherwise this creates a recurring rule starting on `date`. */
+  repeat: '' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 }
+
+export const REPEAT_LABELS = {
+  DAILY: 'Every day',
+  WEEKLY: 'Every week',
+  MONTHLY: 'Every month',
+  QUARTERLY: 'Every 3 months',
+  YEARLY: 'Every year',
+} as const;
 
 const KIND_OPTIONS = [
   { value: 'EXPENSE' as const, label: 'Expense' },
@@ -42,6 +60,8 @@ export function TransactionComposer() {
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
   const save = useSaveTransaction();
+  const createRule = useCreateRecurring();
+  const locale = useLocale();
   const navigate = useNavigate();
 
   const blank = (): FormState => ({
@@ -55,6 +75,7 @@ export function TransactionComposer() {
     date: todayInTimeZone(timezone),
     paymentMethod: '',
     note: '',
+    repeat: defaults.repeat ?? '',
   });
 
   const [f, setF] = useState<FormState>(blank);
@@ -76,6 +97,7 @@ export function TransactionComposer() {
         date: editing.date,
         paymentMethod: editing.paymentMethod ?? '',
         note: editing.note ?? '',
+        repeat: '',
       });
       setMoreOpen(!!(editing.note || editing.paymentMethod));
     } else {
@@ -103,7 +125,8 @@ export function TransactionComposer() {
     if (f.type === 'TRANSFER') {
       if (!f.toAccountId) e.toAccountId = 'Choose where the money goes';
       else if (f.toAccountId === f.accountId) e.toAccountId = 'Choose a different account';
-      if (crossCurrency && !positiveAmountSchema.safeParse(f.toAmount).success) e.toAmount = `Enter the amount received in ${to?.currency}`;
+      if (crossCurrency && f.repeat) e.toAmount = 'Repeating transfers need two accounts in the same currency';
+      else if (crossCurrency && !positiveAmountSchema.safeParse(f.toAmount).success) e.toAmount = `Enter the amount received in ${to?.currency}`;
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -124,6 +147,28 @@ export function TransactionComposer() {
       f.type === 'TRANSFER'
         ? { ...common, type: 'TRANSFER', toAccountId: f.toAccountId, toAmount: crossCurrency ? f.toAmount : null }
         : { ...common, type: f.type, categoryId: f.categoryId || null };
+    if (!editing && f.repeat) {
+      const rule: RecurringCreateInput = {
+        ...(f.type === 'TRANSFER'
+          ? { type: 'TRANSFER' as const, toAccountId: f.toAccountId }
+          : { type: f.type, categoryId: f.categoryId || null }),
+        amount: f.amount,
+        accountId: f.accountId,
+        description: common.description,
+        paymentMethod: common.paymentMethod,
+        frequency: f.repeat,
+        startDate: f.date,
+      };
+      try {
+        await createRule.mutateAsync(rule);
+        const today = todayInTimeZone(timezone);
+        toast.success(f.date <= today ? `${REPEAT_LABELS[f.repeat]} — the first one is added` : `${REPEAT_LABELS[f.repeat]}, starting ${fmtDate(f.date, locale, { day: 'numeric', month: 'long' })}`);
+        close();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not save');
+      }
+      return;
+    }
     try {
       if (editing) {
         const { type: _t, ...rest } = data as TransactionCreateInput & { toAccountId?: string; toAmount?: string | null; categoryId?: string | null };
@@ -142,7 +187,7 @@ export function TransactionComposer() {
 
   const noAccounts = accounts.length === 0;
   const title = editing ? 'Edit transaction' : 'New transaction';
-  const submitLabel = editing ? 'Save changes' : f.type === 'INCOME' ? 'Add income' : f.type === 'TRANSFER' ? 'Record transfer' : 'Add expense';
+  const submitLabel = editing ? 'Save changes' : f.repeat ? 'Create schedule' : f.type === 'INCOME' ? 'Add income' : f.type === 'TRANSFER' ? 'Record transfer' : 'Add expense';
 
   // Loan and repayment rows are owned by their debt and can only change from there.
   if (open && editing?.debtId) {
@@ -181,7 +226,7 @@ export function TransactionComposer() {
         !noAccounts && (
           <>
             <Button onClick={close}>Cancel</Button>
-            <Button variant="primary" type="submit" form="composer" loading={save.isPending}>
+            <Button variant="primary" type="submit" form="composer" loading={save.isPending || createRule.isPending}>
               {submitLabel}
             </Button>
           </>
@@ -218,7 +263,7 @@ export function TransactionComposer() {
                   autoFocus
                   inputMode="decimal"
                   autoComplete="off"
-                  placeholder="0.00"
+                  placeholder="0,00"
                   value={f.amount}
                   onChange={(e) => set('amount', e.target.value.replace(/[^\d.,]/g, ''))}
                   className="tabular w-full bg-transparent focus-visible:shadow-none text-[32px] font-semibold leading-10 tracking-[-0.02em] placeholder:text-label-3 focus:outline-none"
@@ -311,6 +356,21 @@ export function TransactionComposer() {
                 {(p) => <Input {...p} type="date" value={f.date} onChange={(e) => set('date', e.target.value)} required />}
               </Field>
             </div>
+          )}
+
+          {!editing && (
+            <Field label="Repeat" hint={f.repeat ? 'Mizan adds it automatically on each date. Manage schedules in Recurring.' : undefined}>
+              {(p) => (
+                <Select {...p} value={f.repeat} onChange={(e) => set('repeat', e.target.value as FormState['repeat'])}>
+                  <option value="">Never</option>
+                  {(Object.keys(REPEAT_LABELS) as (keyof typeof REPEAT_LABELS)[]).map((k) => (
+                    <option key={k} value={k}>
+                      {REPEAT_LABELS[k]}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
           )}
 
           <div>

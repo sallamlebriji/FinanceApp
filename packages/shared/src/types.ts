@@ -203,3 +203,24 @@ export interface DebtDTO {
   account: { id: string; name: string } | null;
   payments?: DebtPaymentDTO[];
 }
+
+export interface RecurringDTO {
+  id: string;
+  type: TransactionType;
+  amount: string;
+  currency: Currency;
+  description: string;
+  paymentMethod: PaymentMethod | null;
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  interval: number;
+  startDate: ISODate;
+  endDate: ISODate | null;
+  /** Next date a transaction will be created, or null when the schedule has ended. */
+  nextDate: ISODate | null;
+  isActive: boolean;
+  account: { id: string; name: string; color: string };
+  toAccount: { id: string; name: string; color: string } | null;
+  category: Pick<CategoryDTO, 'id' | 'name' | 'icon' | 'color'> | null;
+  /** Approximate monthly impact in the rule's currency (yearly ÷ 12, weekly × 52/12…). */
+  monthlyAmount: string;
+}

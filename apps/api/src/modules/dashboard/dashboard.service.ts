@@ -24,6 +24,7 @@ import { dateValue, isoDate } from '../../lib/serialize';
 import { accountAggregates } from '../accounts/accounts.service';
 import { listBudgets } from '../budgets/budgets.service';
 import { outstandingDebts } from '../debts/debts.service';
+import { generateForUser } from '../recurring/recurring.service';
 import { converterFor } from '../exchange-rates/rates.service';
 import { toTransactionDTO, transactionInclude } from '../transactions/transactions.service';
 
@@ -166,6 +167,8 @@ async function netWorthSeries(
 }
 
 export async function getDashboard(userId: string, query: unknown): Promise<DashboardDTO> {
+  // Post anything due since the last hourly run, so figures are never stale.
+  await generateForUser(userId);
   const settings = await prisma.userSettings.findUniqueOrThrow({ where: { userId } });
   const base = settings.baseCurrency;
   const range = resolveRange(query, settings.timezone);

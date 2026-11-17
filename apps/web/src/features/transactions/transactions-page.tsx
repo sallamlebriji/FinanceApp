@@ -1,8 +1,8 @@
 import { todayInTimeZone, type TransactionCreateInput, type TransactionDTO, type TransactionQuery } from '@mizan/shared';
-import { ChevronLeft, ChevronRight, Download, Plus, Receipt, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Plus, Receipt, Repeat, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { Button } from '@/components/ui/button';
+import { Link, useSearchParams } from 'react-router';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Confirm } from '@/components/ui/confirm';
 import { Field, Input, Select } from '@/components/ui/field';
 import { Card, EmptyState, ErrorState, Segmented, Skeleton } from '@/components/ui/primitives';
@@ -129,6 +129,9 @@ export function TransactionsPage() {
           <p className="text-callout text-label-2">{data ? `${data.total.toLocaleString(locale)} ${data.total === 1 ? 'transaction' : 'transactions'}` : ' '}</p>
         </div>
         <div className="flex gap-2">
+          <Link to="/recurring" className={cn(buttonVariants(), 'lg:hidden')}>
+            <Repeat className="size-4" aria-hidden /> Recurring
+          </Link>
           <Button onClick={onExport} disabled={!data?.total}>
             <Download className="size-4" aria-hidden /> Export CSV
           </Button>

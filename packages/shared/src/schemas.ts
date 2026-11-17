@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ACCOUNT_TYPES, CATEGORY_ICONS, PAYMENT_METHODS } from './constants';
-import { isISODate, PERIOD_PRESETS } from './dates';
+import { FREQUENCIES, isISODate, PERIOD_PRESETS } from './dates';
 import { money, SUPPORTED_CURRENCIES } from './money';
 
 /* ---------- primitives ---------- */
@@ -245,3 +245,36 @@ export const debtPaymentCreateSchema = z.object({
   accountId: idSchema.optional().nullable(),
 });
 export type DebtPaymentCreateInput = z.input<typeof debtPaymentCreateSchema>;
+
+/* ---------- recurring ---------- */
+
+const recurringBase = z.object({
+  amount: positiveAmountSchema,
+  accountId: idSchema,
+  description: z.string().trim().min(1, 'Enter a description').max(140),
+  paymentMethod: z.enum(PAYMENT_METHODS).optional().nullable(),
+  frequency: z.enum(FREQUENCIES),
+  interval: z.coerce.number().int().min(1).max(12).default(1),
+  startDate: isoDateSchema,
+  endDate: isoDateSchema.optional().nullable(),
+});
+
+export const recurringCreateSchema = z
+  .discriminatedUnion('type', [
+    recurringBase.extend({ type: z.literal('INCOME'), categoryId: idSchema.optional().nullable() }),
+    recurringBase.extend({ type: z.literal('EXPENSE'), categoryId: idSchema.optional().nullable() }),
+    recurringBase.extend({ type: z.literal('TRANSFER'), toAccountId: idSchema }),
+  ])
+  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: 'The end date must be after the start date', path: ['endDate'] });
+export type RecurringCreateInput = z.input<typeof recurringCreateSchema>;
+
+/** Type and schedule start are fixed; to change them, end the rule and create a new one. */
+export const recurringUpdateSchema = z.object({
+  amount: positiveAmountSchema.optional(),
+  description: z.string().trim().min(1).max(140).optional(),
+  categoryId: idSchema.optional().nullable(),
+  paymentMethod: z.enum(PAYMENT_METHODS).optional().nullable(),
+  endDate: isoDateSchema.optional().nullable(),
+  isActive: z.boolean().optional(),
+});
+export type RecurringUpdateInput = z.input<typeof recurringUpdateSchema>;

@@ -1,12 +1,18 @@
 import type { TransactionDTO } from '@mizan/shared';
 import { create } from 'zustand';
 
+type ComposerDefaults = Partial<{
+  type: 'EXPENSE' | 'INCOME' | 'TRANSFER';
+  accountId: string;
+  repeat: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+}>;
+
 /** Global quick-entry sheet: opened from the top bar, keyboard shortcut "N", or a row's Edit action. */
 export const useComposer = create<{
   open: boolean;
   editing: TransactionDTO | null;
-  defaults: Partial<{ type: 'EXPENSE' | 'INCOME' | 'TRANSFER'; accountId: string }>;
-  show(opts?: { editing?: TransactionDTO; defaults?: Partial<{ type: 'EXPENSE' | 'INCOME' | 'TRANSFER'; accountId: string }> }): void;
+  defaults: ComposerDefaults;
+  show(opts?: { editing?: TransactionDTO; defaults?: ComposerDefaults }): void;
   close(): void;
 }>((set) => ({
   open: false,

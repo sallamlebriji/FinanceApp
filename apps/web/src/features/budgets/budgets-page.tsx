@@ -104,7 +104,7 @@ function BudgetSheet({ open, onOpenChange, budget }: { open: boolean; onOpenChan
         </Field>
         <div className="grid grid-cols-[1fr_110px] gap-4">
           <Field label={`Limit per ${period === 'MONTHLY' ? 'month' : 'week'}`} error={formState.errors.amount?.message}>
-            {(p) => <Input {...p} inputMode="decimal" className="tabular" placeholder="0.00" {...register('amount')} />}
+            {(p) => <Input {...p} inputMode="decimal" className="tabular" placeholder="0,00" {...register('amount')} />}
           </Field>
           <Field label="Currency">
             {(p) => (
