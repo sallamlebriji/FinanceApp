@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Gauge, HandCoins, LayoutGrid, PiggyBank, Repeat, Settings, Wallet, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Gauge, HandCoins, LayoutGrid, PiggyBank, Repeat, Settings, Wallet, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   to: string;
@@ -19,6 +19,7 @@ export const NAV: NavItem[] = [
   { to: '/budgets', label: 'Budgets', short: 'Plan', icon: Gauge, tab: true },
   { to: '/goals', label: 'Savings goals', short: 'Goals', icon: PiggyBank },
   { to: '/debts', label: 'Debts', short: 'Debts', icon: HandCoins },
+  { to: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
   { to: '/settings', label: 'Settings', short: 'Settings', icon: Settings, tab: true },
 ];
 

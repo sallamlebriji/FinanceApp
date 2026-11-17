@@ -2,7 +2,7 @@
   "name": "mizan",
   "private": true,
   "version": "0.1.0",
-  "description": "Mizan — premium personal finance platform (web, iOS, Android)",
+  "description": "Mizan \u2014 premium personal finance platform (web, iOS, Android)",
   "workspaces": [
     "packages/*",
     "apps/*"

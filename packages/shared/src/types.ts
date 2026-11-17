@@ -224,3 +224,38 @@ export interface RecurringDTO {
   /** Approximate monthly impact in the rule's currency (yearly ÷ 12, weekly × 52/12…). */
   monthlyAmount: string;
 }
+
+export interface ReportCategoryRow {
+  categoryId: string | null;
+  name: string;
+  color: string;
+  icon: string;
+  amount: string;
+  percent: string;
+  /** Same category in the previous period of equal length. */
+  previous: string;
+}
+
+export interface ReportDTO {
+  range: DateRange;
+  previousRange: DateRange;
+  baseCurrency: Currency;
+  totals: {
+    income: string;
+    expense: string;
+    net: string;
+    savingsRate: string | null;
+    /** Spending ÷ days in the period (days so far, for a period that includes today). */
+    averageDailySpend: string;
+    transactionCount: number;
+    unconverted: Currency[];
+  };
+  previousTotals: { income: string; expense: string; net: string };
+  monthly: { month: string; income: string; expense: string; net: string }[];
+  expenseByCategory: ReportCategoryRow[];
+  incomeByCategory: { categoryId: string | null; name: string; color: string; icon: string; amount: string; percent: string }[];
+  topPayees: { description: string; amount: string; count: number }[];
+  largestExpenses: TransactionDTO[];
+  /** Spending per weekday, Monday first. */
+  byWeekday: { weekday: number; amount: string }[];
+}

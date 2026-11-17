@@ -33,7 +33,7 @@ function ChartTooltip({
 }
 
 /** Income vs spending by month. Two series → legend always present; one y-axis. */
-export function CashFlowChart({ data }: { data: DashboardDTO }) {
+export function CashFlowChart({ data }: { data: Pick<DashboardDTO, 'cashFlow' | 'baseCurrency'> }) {
   const locale = useLocale();
   const rows = data.cashFlow.map((m) => ({ month: m.month, Income: Number(m.income), Spending: Number(m.expense) }));
   const best = data.cashFlow.reduce((a, b) => (Number(b.net) > Number(a.net) ? b : a), data.cashFlow[0]!);

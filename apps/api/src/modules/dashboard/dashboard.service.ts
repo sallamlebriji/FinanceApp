@@ -37,7 +37,7 @@ export function resolveRange(query: unknown, timezone: string): DateRange {
 }
 
 /** Income/expense totals (reportable rows only) aggregated per type and currency. */
-async function reportableTotals(userId: string, range: DateRange): Promise<ReportableTx[]> {
+export async function reportableTotals(userId: string, range: DateRange): Promise<ReportableTx[]> {
   const rows = await prisma.transaction.groupBy({
     by: ['type', 'currency'],
     where: {
@@ -51,7 +51,7 @@ async function reportableTotals(userId: string, range: DateRange): Promise<Repor
   return rows.map((r) => ({ type: r.type, currency: r.currency, amount: r._sum.amount?.toString() ?? '0' }));
 }
 
-async function monthlyCashFlow(userId: string, window: DateRange, base: Currency, converter: Converter) {
+export async function monthlyCashFlow(userId: string, window: DateRange, base: Currency, converter: Converter) {
   const rows = await prisma.$queryRaw<{ m: string; type: 'INCOME' | 'EXPENSE'; currency: Currency; total: Raw }[]>`
     SELECT DATE_FORMAT(\`date\`, '%Y-%m') AS m, \`type\`, currency, SUM(amount) AS total
     FROM \`transactions\`
@@ -65,14 +65,20 @@ async function monthlyCashFlow(userId: string, window: DateRange, base: Currency
   });
 }
 
-async function spendingByCategory(userId: string, range: DateRange, base: Currency, converter: Converter) {
+export async function spendingByCategory(
+  userId: string,
+  range: DateRange,
+  base: Currency,
+  converter: Converter,
+  type: 'EXPENSE' | 'INCOME' = 'EXPENSE',
+) {
   const [rows, categories] = await Promise.all([
     prisma.transaction.groupBy({
       by: ['categoryId', 'currency'],
-      where: { userId, type: 'EXPENSE', debtId: null, date: { gte: dateValue(range.from), lte: dateValue(range.to) } },
+      where: { userId, type, debtId: null, date: { gte: dateValue(range.from), lte: dateValue(range.to) } },
       _sum: { amount: true },
     }),
-    prisma.category.findMany({ where: { userId, type: 'EXPENSE' } }),
+    prisma.category.findMany({ where: { userId, type } }),
   ]);
   const byId = new Map(categories.map((c) => [c.id, c]));
   // Roll subcategories up into their parent.

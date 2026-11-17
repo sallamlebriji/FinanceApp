@@ -1,4 +1,4 @@
-import { Landmark, Plus } from 'lucide-react';
+import { BarChart3, Landmark, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, EmptyState, ErrorState, SectionHeader, Skeleton } from '@/components/ui/primitives';
@@ -47,6 +47,9 @@ export function DashboardPage() {
             {data && ` · ${fmtDate(data.range.from, locale, { day: 'numeric', month: 'short' })} – ${fmtDate(data.range.to, locale, { day: 'numeric', month: 'short', year: 'numeric' })}`}
           </p>
         </div>
+        <Link to="/reports" className={buttonVariants({ variant: 'plain', size: 'sm' })}>
+          <BarChart3 className="size-4" aria-hidden /> Reports
+        </Link>
       </header>
 
       {isLoading ? (

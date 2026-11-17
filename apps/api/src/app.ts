@@ -18,6 +18,7 @@ import { categoriesRouter } from './modules/categories/categories.routes';
 import { debtsRouter } from './modules/debts/debts.routes';
 import { goalsRouter } from './modules/goals/goals.routes';
 import { recurringRouter } from './modules/recurring/recurring.routes';
+import { reportsRouter } from './modules/reports/reports.routes';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes';
 import { ratesRouter } from './modules/exchange-rates/rates.routes';
 import { notificationsRouter } from './modules/notifications/notifications.routes';
@@ -61,6 +62,7 @@ export function createApp() {
   secured.use('/goals', goalsRouter);
   secured.use('/debts', debtsRouter);
   secured.use('/recurring', recurringRouter);
+  secured.use('/reports', reportsRouter);
   secured.use('/exchange-rates', ratesRouter);
   secured.use('/notifications', notificationsRouter);
   api.use(secured);
